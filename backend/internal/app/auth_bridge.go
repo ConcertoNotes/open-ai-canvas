@@ -83,13 +83,6 @@ func (h authHost) BrandName() string {
 	return h.svc.appearanceBrandName()
 }
 
-func (h authHost) EnsureSignupBonus(userID string) error {
-	if h.svc == nil {
-		return nil
-	}
-	return h.svc.ensureSignupBonus(userID)
-}
-
 func (h authHost) RecordActivity(userID string, event string, count int) {
 	if h.svc == nil {
 		return

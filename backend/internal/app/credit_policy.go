@@ -14,30 +14,17 @@ import (
 
 const creditPolicySettingKey = "credit_policy"
 
+// 积分只能通过充值、兑换码或管理员调整获得；新用户默认 0 积分，不提供注册赠送和每日签到。
 type CreditPolicy struct {
-	SignupBonusMicrocredits  int64            `json:"signupBonusMicrocredits"`
-	CheckinBonusMicrocredits int64            `json:"checkinBonusMicrocredits"`
-	DefaultMultiplierBPS     int64            `json:"defaultMultiplierBasisPoints"`
-	ModelMultiplierBPS       map[string]int64 `json:"modelMultiplierBasisPoints"`
-}
-
-type PublicCreditPolicy struct {
-	SignupBonusMicrocredits  int64 `json:"signupBonusMicrocredits"`
-	CheckinBonusMicrocredits int64 `json:"checkinBonusMicrocredits"`
-	CheckedInToday           bool  `json:"checkedInToday"`
+	DefaultMultiplierBPS int64            `json:"defaultMultiplierBasisPoints"`
+	ModelMultiplierBPS   map[string]int64 `json:"modelMultiplierBasisPoints"`
 }
 
 func defaultCreditPolicy() CreditPolicy {
-	return CreditPolicy{SignupBonusMicrocredits: 100 * CreditScale, CheckinBonusMicrocredits: 10 * CreditScale, DefaultMultiplierBPS: 10_000, ModelMultiplierBPS: map[string]int64{}}
+	return CreditPolicy{DefaultMultiplierBPS: 10_000, ModelMultiplierBPS: map[string]int64{}}
 }
 
 func validateCreditPolicy(policy CreditPolicy) error {
-	if policy.SignupBonusMicrocredits < 0 || policy.CheckinBonusMicrocredits < 0 {
-		return BadAuthRequest("注册和签到奖励不能小于 0")
-	}
-	if policy.SignupBonusMicrocredits > 1_000_000*CreditScale || policy.CheckinBonusMicrocredits > 100_000*CreditScale {
-		return BadAuthRequest("积分奖励超出允许范围")
-	}
 	if policy.DefaultMultiplierBPS <= 0 || policy.DefaultMultiplierBPS > 1_000_000 {
 		return BadAuthRequest("默认模型倍率必须在 0.0001-100 之间")
 	}
@@ -121,47 +108,6 @@ func (s *Service) UpdateCreditPolicy(actor *model.User, policy CreditPolicy) (Cr
 		return CreditPolicy{}, err
 	}
 	return policy, nil
-}
-
-func (s *Service) ensureSignupBonus(userID string) error {
-	enabled, err := s.FeatureEnabled(FeatureCredits)
-	if err != nil || !enabled {
-		return err
-	}
-	policy, err := s.creditPolicy()
-	if err != nil || policy.SignupBonusMicrocredits == 0 {
-		return err
-	}
-	_, _, err = s.repo.GrantCreditsOnce(userID, model.CreditLedgerSignupBonus, policy.SignupBonusMicrocredits, "signup:"+userID, "新用户默认积分")
-	return err
-}
-
-func (s *Service) CheckinCredits(user *model.User) (*model.CreditAccount, bool, error) {
-	if user == nil {
-		return nil, false, Unauthorized("请先登录")
-	}
-	if err := s.RequireFeature(FeatureCredits); err != nil {
-		return nil, false, err
-	}
-	policy, err := s.creditPolicy()
-	if err != nil {
-		return nil, false, err
-	}
-	if policy.CheckinBonusMicrocredits == 0 {
-		return nil, false, BadAuthRequest("当前未开启签到奖励")
-	}
-	day := time.Now().UTC().Format("2006-01-02")
-	return s.repo.GrantCreditsOnce(user.ID, model.CreditLedgerCheckinBonus, policy.CheckinBonusMicrocredits, "checkin:"+user.ID+":"+day, "每日签到奖励")
-}
-
-func (s *Service) publicCreditPolicy(userID string) (PublicCreditPolicy, error) {
-	policy, err := s.creditPolicy()
-	if err != nil {
-		return PublicCreditPolicy{}, err
-	}
-	reference := "checkin:" + userID + ":" + time.Now().UTC().Format("2006-01-02")
-	checked, err := s.repo.CreditLedgerReferenceExists(reference)
-	return PublicCreditPolicy{SignupBonusMicrocredits: policy.SignupBonusMicrocredits, CheckinBonusMicrocredits: policy.CheckinBonusMicrocredits, CheckedInToday: checked}, err
 }
 
 // 单价、数量和倍率全程使用整数并向上取整，避免浮点误差造成少扣积分。

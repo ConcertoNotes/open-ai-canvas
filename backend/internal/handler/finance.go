@@ -51,23 +51,6 @@ func RegisterFinanceRoutes(r *gin.RouterGroup, svc *service.Service) {
 		}
 		ok(c, gin.H{"account": account})
 	})
-	r.POST("/wallet/checkin", func(c *gin.Context) {
-		user, err := currentUser(c, svc)
-		if err != nil {
-			failService(c, err)
-			return
-		}
-		account, granted, err := svc.CheckinCredits(user)
-		if err != nil {
-			failService(c, err)
-			return
-		}
-		if !granted {
-			fail(c, http.StatusConflict, service.BadAuthRequest("今天已经签到过了"))
-			return
-		}
-		ok(c, gin.H{"account": account, "granted": true})
-	})
 
 	r.GET("/admin/settings/linuxdo", func(c *gin.Context) {
 		user, err := currentUser(c, svc)

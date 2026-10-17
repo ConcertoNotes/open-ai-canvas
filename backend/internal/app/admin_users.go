@@ -154,9 +154,6 @@ func (s *Service) CreateAdminUser(actor *model.User, req CreateAdminUserRequest)
 	if err := s.repo.Create(user); err != nil {
 		return nil, err
 	}
-	if err := s.ensureSignupBonus(user.ID); err != nil {
-		return nil, err
-	}
 	if err := s.appendAdminAudit(actor, "user.create", "user", user.ID, "\u521b\u5efa\u7528\u6237\u8d26\u53f7", map[string]any{"role": user.Role, "status": user.Status}); err != nil {
 		return nil, err
 	}

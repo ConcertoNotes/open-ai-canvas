@@ -19,7 +19,6 @@ type Host interface {
 	DecryptSecret(value string) (string, error)
 	SettingsEncryptionKey() ([]byte, error)
 	BrandName() string
-	EnsureSignupBonus(userID string) error
 	RecordActivity(userID string, event string, count int)
 	AllowRequest(ctx context.Context, key string, limit int, window time.Duration) (bool, error)
 	RequestRetryAfter(ctx context.Context, key string, window time.Duration) time.Duration
@@ -36,7 +35,6 @@ func (nopHost) DecryptSecret(value string) (string, error) {
 }
 func (nopHost) SettingsEncryptionKey() ([]byte, error) { return nil, nil }
 func (nopHost) BrandName() string                      { return DefaultBrandName }
-func (nopHost) EnsureSignupBonus(string) error         { return nil }
 func (nopHost) RecordActivity(string, string, int)     {}
 func (nopHost) AllowRequest(context.Context, string, int, time.Duration) (bool, error) {
 	return true, nil

@@ -112,14 +112,9 @@ AutoDL 视频模型在“能力与参数 → 画面规格”直接多选当前�
 - `web/src/pages/admin/components/admin-banner-announcements-panel.tsx`：后台配置面板。
 - `GET /api/banner-announcements` 与 `/api/admin/banner-announcements`：公开生效列表与管理 CRUD。
 
-## 工作区签到加油站
+## 积分获取方式
 
-积分功能开启且后台「每日签到积分」大于 0 时，首页侧栏容量条上方固定显示领取卡片：标题为「{站点品牌名}加油站」，副文案为今日可领积分，黑色按钮「立即领取」。未领取时一直显示；当天领取成功后立即消失。关闭积分、签到积分为 0，或未登录时不显示。卡片用白底、黑按钮和青绿积分数字，不套浅蓝舞台底。
-
-### 相关实现
-
-- `web/src/components/layout/workspace-sidebar-checkin.tsx`：侧栏领取卡片。
-- `POST /api/wallet/checkin`：每日签到入账，同一天不可重复领取。
+积分只能通过充值、兑换码或管理员调整获得。新用户（自助注册、验证码登录、LinuxDO 登录和后台创建）默认 0 积分；不提供注册赠送和每日签到。历史上的 `signup_bonus` / `checkin_bonus` 流水仍会在钱包明细和后台统计中展示。
 
 ## 工作区账号容量
 

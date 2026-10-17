@@ -332,9 +332,6 @@ func (s *Service) CompleteLinuxDOLogin(stateValue string, code string, cookieVal
 	if user.Status != model.UserStatusActive {
 		return nil, kernel.Forbidden("该账号已被禁用")
 	}
-	if err := s.host.EnsureSignupBonus(user.ID); err != nil {
-		return nil, err
-	}
 	now := time.Now()
 	user.LastLoginAt = &now
 	user.UpdatedAt = now

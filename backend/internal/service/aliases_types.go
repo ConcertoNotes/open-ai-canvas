@@ -241,7 +241,6 @@ type (
 	PublicChannelModel                     = app.PublicChannelModel
 	PublicChannelModelPrice                = app.PublicChannelModelPrice
 	PublicChannelModelPriceTier            = app.PublicChannelModelPriceTier
-	PublicCreditPolicy                     = app.PublicCreditPolicy
 	PublicDrawingEngineSetting             = app.PublicDrawingEngineSetting
 	PublicEmailSetting                     = app.PublicEmailSetting
 	PublicFeatureAvailability              = app.PublicFeatureAvailability

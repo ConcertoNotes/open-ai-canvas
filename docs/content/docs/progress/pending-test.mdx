@@ -64,6 +64,24 @@ description: 当前项目已实现功能的手工验证清单与未确认边界
 - 已验证：后端工作台套件、系统渠道选择与 MiniMax 视频协议专项通过；前端 30 项相关回归、类型检查及生产构建通过。测试只创建隔离数据库中的任务和账单，未提交真实付费生成。
 - [ ] 用户验收：在真实系统渠道及浏览器自定义渠道分别检查无素材、首尾帧、普通参考图、视频和音频组合；核对生成结果与账单。不支持的模式应在提交前拒绝，不产生扣费；自动化回归不代替真实供应商生成验收。
 
+## 官方应用插件默认启用
+
+- 已处理：AI 提示词优化器、Eagle 素材库、RunningHub 工作流、AI 审美批改、媒体转换节点、剪辑工作台等官方应用插件，在用户未手动设置过开关时默认启用；用户在插件中心关闭后以用户选择为准，管理员平台级停用仍优先。RunningHub 不再沿用旧的运行时全局状态作为用户默认值。
+- 已验证：`go test ./internal/app -run 'Plugin|EditorShell|ArtCritique|Workflow'` 通过，覆盖默认启用与用户关闭后失效；未做浏览器验收。
+- [ ] 用户验收：新账号进入创作页图片/视频模式可直接看到「优化」按钮，画布图片/视频节点可看到「润色」；在插件中心关闭后按钮消失且刷新后保持关闭。
+
+## 取消注册赠送与每日签到积分
+
+- 已处理：删除新用户默认积分（自助注册、验证码登录、LinuxDO 登录、后台创建、登录补发）与 `POST /api/wallet/checkin`；新用户默认 0 积分，积分只能通过充值、兑换码或管理员调整获得。钱包接口不再返回 `policy`，积分策略只保留计费倍率；后台策略抽屉移除「注册赠送积分」「每日签到积分」，侧栏签到卡片下线。历史 `signup_bonus` / `checkin_bonus` 流水保留展示和统计，已发放的积分不回收。
+- 已验证：后端 `go build ./...`、auth 包测试通过；app 包与 HEAD 对比无新增失败（handler / repository / app 中的 Windows 临时目录与并发用例在原始 HEAD 上同样失败）。前端 `tsc --noEmit`、`bun run lint` 与侧栏/后台相关测试通过；未做浏览器验收。
+- [ ] 用户验收：新注册账号余额为 0 且流水为空；首页侧栏不再出现签到卡片；后台积分策略可正常保存倍率；老账号历史赠送流水仍可见。
+
+## Agent 使用 OpenAI Responses 协议的多轮工具调用
+
+- 已定位：回放历史 `function_call` 时附带非法字段 `item_reference`，上游返回 `Unknown parameter: 'input[n].item_reference'`；去掉后又因携带 `fc_` item id 而缺少配对的 `rs_` reasoning 项，上游返回 `provided without its required 'reasoning' item`。
+- 已处理：Responses 请求体回放 `function_call` 时只保留 `call_id`、`name`、`arguments`，不再携带 `id` / `item_reference`；取消 Responses 历史必须带 item id 的校验。推理模型每轮不复用上一轮 reasoning，可能略增 token。
+- 已验证：`go test ./internal/app -run 'Agent|Canonical'` 通过；未用真实上游跑完整多轮 Agent。
+- [ ] 用户验收：用 OpenAI Responses 协议的推理模型（如 gpt-6.1-sol）在画布 Agent 中完成包含多次工具调用的任务，确认不再出现上述两类 400。
 
 ## 旧画布冲突阻塞全部前台提交
 

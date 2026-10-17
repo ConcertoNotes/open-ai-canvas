@@ -38,12 +38,20 @@ func TestCreateAdminUserCreatesActiveUserWithPasswordAndAudit(t *testing.T) {
 	if err := bcrypt.CompareHashAndPassword([]byte(created.PasswordHash), []byte("strong-password")); err != nil {
 		t.Fatalf("password hash does not match: %v", err)
 	}
-	var account model.CreditAccount
-	if err := db.First(&account, "user_id = ?", created.ID).Error; err != nil {
+	// 新用户默认 0 积分，创建账号不得写入任何赠送流水。
+	var ledgerCount int64
+	if err := db.Model(&model.CreditLedgerEntry{}).Where("user_id = ?", created.ID).Count(&ledgerCount).Error; err != nil {
 		t.Fatal(err)
 	}
-	if account.AvailableMicrocredits <= 0 {
-		t.Fatalf("available credits = %d, want positive signup bonus", account.AvailableMicrocredits)
+	if ledgerCount != 0 {
+		t.Fatalf("credit ledger entries = %d, want none for a new user", ledgerCount)
+	}
+	var fundedAccounts int64
+	if err := db.Model(&model.CreditAccount{}).Where("user_id = ? AND available_microcredits <> 0", created.ID).Count(&fundedAccounts).Error; err != nil {
+		t.Fatal(err)
+	}
+	if fundedAccounts != 0 {
+		t.Fatal("new user must start with 0 credits")
 	}
 	var audit model.AdminAuditEvent
 	if err := db.Where("action = ? AND target_id = ?", "user.create", created.ID).First(&audit).Error; err != nil {

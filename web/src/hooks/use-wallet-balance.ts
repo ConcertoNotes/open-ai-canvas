@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-import { getWallet, type WalletSummary } from "@/services/api/wallet";
+import { getWallet } from "@/services/api/wallet";
 
 // 余额不是页面心跳数据。工作区内多个位置共享同一个 Query，只在首次进入、显式
 // wallet:updated 事件或用户主动刷新时访问服务端，避免常驻布局产生永久轮询。
@@ -10,7 +10,6 @@ const walletBalanceQueryKey = (userId: string) => ["wallet-balance", userId] as 
 
 export type WalletSnapshot = {
     availableMicrocredits: number;
-    policy: WalletSummary["policy"];
 };
 
 export function useWalletBalance(userId?: string, enabled = true) {
@@ -23,7 +22,7 @@ export function useWalletBalance(userId?: string, enabled = true) {
         queryFn: async (): Promise<WalletSnapshot> => {
             const wallet = await getWallet(1, 1);
             if (wallet.account.userId !== activeUserId) throw new Error("积分账户与当前用户不一致");
-            return { availableMicrocredits: wallet.account.availableMicrocredits, policy: wallet.policy };
+            return { availableMicrocredits: wallet.account.availableMicrocredits };
         },
         staleTime: WALLET_STALE_TIME_MS,
         refetchOnWindowFocus: false,
@@ -44,7 +43,6 @@ export function useWalletBalance(userId?: string, enabled = true) {
 
     return {
         availableMicrocredits: query.data?.availableMicrocredits ?? null,
-        policy: query.data?.policy ?? null,
         refreshing: query.isFetching,
         refresh: query.refetch,
     };

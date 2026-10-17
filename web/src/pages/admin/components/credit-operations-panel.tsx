@@ -17,7 +17,7 @@ export type CreditOperation = "policy" | "adjustment" | null;
 type AdjustmentFormValues = { userId: string; amount: number; note: string };
 type ResolutionFormValues = { note: string };
 type PolicyMultiplierRow = { model?: string; multiplier?: number };
-type PolicyFormValues = { signupBonus: number; checkinBonus: number; defaultMultiplier: number; modelMultipliers: PolicyMultiplierRow[] };
+type PolicyFormValues = { defaultMultiplier: number; modelMultipliers: PolicyMultiplierRow[] };
 type BillingResolutionAction = "settle" | "refund";
 type AdjustmentUser = AdminReferenceData["users"][number] & Partial<Pick<AdminUser, "email" | "availableMicrocredits" | "reservedMicrocredits">>;
 type BillingResolutionTarget = { kind: "single"; order: BillingOrder; action: BillingResolutionAction } | { kind: "batch"; orders: BillingOrder[]; action: BillingResolutionAction };
@@ -103,8 +103,6 @@ export default function CreditOperationsPanel({ users, activeOperation, onOperat
             .then(({ policy }) => {
                 if (!active) return;
                 policyForm.setFieldsValue({
-                    signupBonus: policy.signupBonusMicrocredits / 1_000_000,
-                    checkinBonus: policy.checkinBonusMicrocredits / 1_000_000,
                     defaultMultiplier: policy.defaultMultiplierBasisPoints / 10_000,
                     modelMultipliers: Object.entries(policy.modelMultiplierBasisPoints).map(([model, value]) => ({
                         model,
@@ -171,8 +169,6 @@ export default function CreditOperationsPanel({ users, activeOperation, onOperat
         setSavingPolicy(true);
         try {
             await updateAdminCreditPolicy({
-                signupBonusMicrocredits: toMicrocredits(values.signupBonus),
-                checkinBonusMicrocredits: toMicrocredits(values.checkinBonus),
                 defaultMultiplierBasisPoints: Math.round(values.defaultMultiplier * 10_000),
                 modelMultiplierBasisPoints,
             });
@@ -502,29 +498,9 @@ export default function CreditOperationsPanel({ users, activeOperation, onOperat
                         <section className="admin-credit-drawer-section">
                             <div className="admin-credit-drawer-section-heading">
                                 <h3>基础规则</h3>
-                                <p>积分支持最多 6 位小数，倍率支持最多 4 位小数。</p>
+                                <p>倍率支持最多 4 位小数。新用户默认 0 积分，积分只能通过充值、兑换码或管理员调整获得。</p>
                             </div>
                             <div className="admin-credit-policy-grid">
-                                <Form.Item
-                                    name="signupBonus"
-                                    label="注册赠送积分"
-                                    rules={[
-                                        { required: true, message: "请填写注册积分" },
-                                        { type: "number", min: 0, max: 1_000_000, message: "请输入 0–1,000,000" },
-                                    ]}
-                                >
-                                    <InputNumber className="w-full" min={0} max={1_000_000} precision={6} />
-                                </Form.Item>
-                                <Form.Item
-                                    name="checkinBonus"
-                                    label="每日签到积分"
-                                    rules={[
-                                        { required: true, message: "请填写签到积分" },
-                                        { type: "number", min: 0, max: 100_000, message: "请输入 0–100,000" },
-                                    ]}
-                                >
-                                    <InputNumber className="w-full" min={0} max={100_000} precision={6} />
-                                </Form.Item>
                                 <Form.Item
                                     name="defaultMultiplier"
                                     label="默认计费倍率"

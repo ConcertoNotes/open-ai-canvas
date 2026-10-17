@@ -118,6 +118,7 @@ const (
 	CreditLedgerConsume      CreditLedgerType = "consume"
 	CreditLedgerRefund       CreditLedgerType = "refund"
 	CreditLedgerAdminAdjust  CreditLedgerType = "admin_adjustment"
+	// 注册赠送与每日签到已下线，仅保留类型用于展示和统计历史流水。
 	CreditLedgerSignupBonus  CreditLedgerType = "signup_bonus"
 	CreditLedgerCheckinBonus CreditLedgerType = "checkin_bonus"
 	CreditLedgerPaymentTopup CreditLedgerType = "payment_topup"

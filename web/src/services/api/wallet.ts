@@ -33,16 +33,9 @@ export type WalletSummary = {
     total: number;
     page: number;
     pageSize: number;
-    policy: {
-        signupBonusMicrocredits: number;
-        checkinBonusMicrocredits: number;
-        checkedInToday: boolean;
-    };
 };
 
 export type CreditPolicy = {
-    signupBonusMicrocredits: number;
-    checkinBonusMicrocredits: number;
     defaultMultiplierBasisPoints: number;
     modelMultiplierBasisPoints: Record<string, number>;
 };
@@ -250,10 +243,6 @@ export function getWallet(page = 1, pageSize = 30, type = "all") {
 
 export function redeemCredits(code: string) {
     return http.post<{ account: CreditAccount }>("/wallet/redeem", { code });
-}
-
-export function checkinCredits() {
-    return http.post<{ account: CreditAccount; granted: boolean }>("/wallet/checkin");
 }
 
 export function getAdminCreditPolicy() {

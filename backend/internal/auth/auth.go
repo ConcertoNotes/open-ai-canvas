@@ -246,9 +246,6 @@ func (s *Service) Register(req RegisterRequest) (*AuthSessionResult, error) {
 	} else if err := s.repo.CreateRegisteredUser(&user); err != nil {
 		return nil, err
 	}
-	if err := s.host.EnsureSignupBonus(user.ID); err != nil {
-		return nil, err
-	}
 	event := NewLoginLog("password", "registration", req.LoginContext)
 	result, err := s.createAuthSession(&user, event)
 	if err != nil {
@@ -297,9 +294,6 @@ func (s *Service) Login(req LoginRequest) (result *AuthSessionResult, err error)
 	user.LastLoginAt = &now
 	user.UpdatedAt = now
 	if err := s.repo.UpdateUserLoginTime(user.ID, now); err != nil {
-		return nil, err
-	}
-	if err := s.host.EnsureSignupBonus(user.ID); err != nil {
 		return nil, err
 	}
 	return s.createAuthSession(user, event)
