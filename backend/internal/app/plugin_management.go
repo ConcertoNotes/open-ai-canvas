@@ -222,15 +222,9 @@ func (s *Service) pluginStateForUser(actor *model.User, pluginID string, items [
 				userEnabled, userConfigured = userState.Enabled, true
 			}
 		}
-		// Preserve the old globally-enabled workflow behavior until each user
-		// explicitly saves a personal choice. Other official applications were
-		// already controlled by each user's local installation state.
-		if !userConfigured {
-			if pluginID == PluginMediaConversion {
-				userEnabled = true
-			} else if hasRuntime && pluginID == WorkflowPluginRunningHub {
-				userEnabled = runtimePlugin.Status == "enabled"
-			}
+		// 官方应用插件默认对用户启用；用户显式保存过开关后以用户选择为准。
+		if !userConfigured && policy.Origin == PluginOriginOfficial && policy.Kind == PluginKindApplication {
+			userEnabled = true
 		}
 	}
 	effective := platformAvailable

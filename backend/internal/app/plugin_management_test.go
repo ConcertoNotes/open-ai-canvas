@@ -31,9 +31,20 @@ func TestApplicationPluginUsesUserStateUnderPlatformAvailability(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	initial := states[WorkflowPluginRunningHub]
-	if !initial.PlatformAvailable || initial.UserEnabled || initial.EffectiveEnabled || !initial.CanToggle {
-		t.Fatalf("initial RunningHub state = %#v", initial)
+	// 官方应用插件在用户未显式设置前默认启用。
+	for _, pluginID := range []string{WorkflowPluginRunningHub, PluginPromptOptimizer, PluginEagleAssetConnector, PluginAIArtCritique, PluginMediaConversion, PluginEditorShell} {
+		initial := states[pluginID]
+		if !initial.PlatformAvailable || !initial.UserEnabled || initial.UserConfigured || !initial.EffectiveEnabled || !initial.CanToggle {
+			t.Fatalf("initial %s state = %#v", pluginID, initial)
+		}
+	}
+
+	optedOut, err := svc.SetUserPluginEnabled(user, PluginPromptOptimizer, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !optedOut.UserConfigured || optedOut.UserEnabled || optedOut.EffectiveEnabled {
+		t.Fatalf("user-disabled prompt optimizer state = %#v", optedOut)
 	}
 
 	enabled, err := svc.SetUserPluginEnabled(user, WorkflowPluginRunningHub, true)
