@@ -96,7 +96,7 @@ func TestValidateCanonicalAgentHistoryRejectsOrphanToolResult(t *testing.T) {
 	}
 }
 
-func TestValidateCanonicalAgentHistoryRequiresResponsesItemID(t *testing.T) {
+func TestCanonicalAgentResponsesHistoryDoesNotReplayItemID(t *testing.T) {
 	request := canonicalAgentRequest{
 		Messages: []map[string]interface{}{
 			{"role": "user", "content": "读取"},
@@ -105,7 +105,15 @@ func TestValidateCanonicalAgentHistoryRequiresResponsesItemID(t *testing.T) {
 		},
 		ToolChoice: "auto",
 	}
-	if _, err := expandCanonicalAgentRequest(&request, providerConfig{InterfaceType: string(model.ChannelInterfaceOpenAIResponse)}, false); err == nil || !strings.Contains(err.Error(), "call-3") {
-		t.Fatalf("missing Responses item id error = %v", err)
+	// Responses 不回放 function_call 的 item id（后端不保存 reasoning 项），缺少 id 不应报错。
+	body, err := expandCanonicalAgentRequest(&request, providerConfig{InterfaceType: string(model.ChannelInterfaceOpenAIResponse)}, false)
+	if err != nil {
+		t.Fatalf("Responses history without item id error = %v", err)
+	}
+	input, _ := body.Responses["input"].([]interface{})
+	for _, raw := range input {
+		if item, _ := raw.(map[string]interface{}); item["type"] == "function_call" && (item["id"] != nil || item["item_reference"] != nil) {
+			t.Fatalf("function_call must not carry item id: %#v", item)
+		}
 	}
 }

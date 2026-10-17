@@ -66,7 +66,7 @@ func expandCanonicalAgentRequest(source *canonicalAgentRequest, config providerC
 			return nil, errors.New("画布 Agent 工具定义缺少名称")
 		}
 	}
-	if err := validateCanonicalAgentHistory(source, config.InterfaceType == string(model.ChannelInterfaceOpenAIResponse)); err != nil {
+	if err := validateCanonicalAgentHistory(source, false); err != nil {
 		return nil, err
 	}
 	switch choice := source.ToolChoice.(type) {
@@ -197,16 +197,9 @@ func canonicalAgentResponsesBody(source *canonicalAgentRequest) (map[string]inte
 			if callID == "" {
 				return nil, errors.New("画布 Agent 工具调用缺少 call_id")
 			}
-			itemID, err := canonicalAgentFunctionCallItemID(message)
-			if err != nil {
-				return nil, err
-			}
+			// 不回放 item id：后端不保存 reasoning 项，带 fc_ id 会被上游要求配对 rs_ 项。
 			item := map[string]interface{}{
 				"type": "function_call", "call_id": callID, "name": message["name"], "arguments": message["arguments"],
-			}
-			if itemID != "" {
-				item["id"] = itemID
-				item["item_reference"] = itemID
 			}
 			messages = append(messages, item)
 		case stringField(message, "role") == "tool":
@@ -229,15 +222,7 @@ func canonicalAgentResponsesBody(source *canonicalAgentRequest) (map[string]inte
 				if callID == "" || stringField(function, "name") == "" {
 					return nil, errors.New("画布 Agent 工具调用缺少标识或名称")
 				}
-				itemID, err := canonicalAgentToolCallItemID(call)
-				if err != nil {
-					return nil, err
-				}
 				item := map[string]interface{}{"type": "function_call", "call_id": callID, "name": function["name"], "arguments": function["arguments"]}
-				if itemID != "" {
-					item["id"] = itemID
-					item["item_reference"] = itemID
-				}
 				messages = append(messages, item)
 			}
 		}
