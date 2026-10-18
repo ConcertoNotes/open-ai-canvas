@@ -70,7 +70,7 @@ type Manager struct {
 func NewManager(config Config) (*Manager, error) {
 	config.Repository = strings.TrimSpace(config.Repository)
 	if config.Repository == "" {
-		config.Repository = "ddcat-ai/open-ai-canvas"
+		config.Repository = "ConcertoNotes/open-ai-canvas"
 	}
 	if config.InstallDir == "" {
 		config.InstallDir = "/opt/open-ai-canvas"

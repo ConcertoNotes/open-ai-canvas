@@ -213,7 +213,7 @@ export default function SystemUpdatePage() {
                             <dl className="admin-system-update-facts">
                                 <dt>部署方式</dt><dd>{status?.deployment || "未知"}</dd>
                                 <dt>发布时间</dt><dd>{formatDate(status?.latestRelease?.publishedAt)}</dd>
-                                <dt>代码仓库</dt><dd>{status?.repository || "ddcat-ai/open-ai-canvas"}</dd>
+                                <dt>代码仓库</dt><dd>{status?.repository || "ConcertoNotes/open-ai-canvas"}</dd>
                             </dl>
                             {status?.latestRelease ? (
                                 <div className="admin-system-update-notes">
