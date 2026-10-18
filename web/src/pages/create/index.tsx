@@ -302,11 +302,14 @@ export default function CreatePage() {
         if (!recoverableTaskIds.length) return;
         let cancelled = false;
         const observationController = new AbortController();
+        // 订阅逐条推送，同一消息的批量任务要保留完整快照再判断终态。
+        const observedTasks = new Map<string, Awaited<ReturnType<typeof materializeCreationTaskResults>>[number]>();
         const applyTasks = async (tasks: GenerationTask[]) => {
             const runtime = await loadCreationRuntime();
-            const contextual = attachCreationTaskContexts(tasks, conversations);
+            const contextual = attachCreationTaskContexts(tasks, conversationsRef.current);
             const persistedTasks = await materializeCreationTaskResults(runtime, contextual, observationController.signal);
             if (cancelled) return;
+            for (const task of persistedTasks) observedTasks.set(task.id, task);
             taskSyncWarningRef.current = false;
             const attachable = persistedTasks.filter((task) => task.status === "succeeded" && Boolean(task.clientContext?.messageId) && Boolean(task.creationResultUrls?.length || task.creationResultStorageKeys?.length));
             for (const task of attachable) {
@@ -314,7 +317,7 @@ export default function CreatePage() {
                     await runtime.consumeGenerationTaskMessage(task, task.clientContext!.messageId!, async ({ effectKey, resultUrls, resultStorageKeys }) => {
                         if (cancelled) return;
                         await updateConversationMessage(task.clientContext!.conversationId!, task.clientContext!.messageId!, (item) =>
-                            runtime.applyGenerationConsumerEffect(item, effectKey, (current) => ({ ...current, status: "done" as const, ...(resultUrls.length ? { resultUrls: Array.from(new Set([...(current.resultUrls || []), ...resultUrls])) } : {}), ...(resultStorageKeys.length ? { resultStorageKeys: Array.from(new Set([...(current.resultStorageKeys || []), ...resultStorageKeys])) } : {}) })).value,
+                            runtime.applyGenerationConsumerEffect(item, effectKey, (current) => ({ ...current, ...(resultUrls.length ? { resultUrls: Array.from(new Set([...(current.resultUrls || []), ...resultUrls])) } : {}), ...(resultStorageKeys.length ? { resultStorageKeys: Array.from(new Set([...(current.resultStorageKeys || []), ...resultStorageKeys])) } : {}) })).value,
                         );
                     }, { signal: observationController.signal, materialize: async () => task, materializedUrls: runtime.generationTaskMaterializedUrls, materializedStorageKeys: runtime.generationTaskMaterializedStorageKeys });
                 } catch (error) {
@@ -322,7 +325,7 @@ export default function CreatePage() {
                     console.warn("创作任务结果挂载失败，将使用已物化结果收敛消息状态", error);
                 }
             }
-            if (!cancelled) setConversations((current) => reconcileCreationTaskMessages(runtime, current, persistedTasks));
+            if (!cancelled) setConversations((current) => reconcileCreationTaskMessages(runtime, current, Array.from(observedTasks.values())));
         };
         const warnSync = (error: unknown) => {
             if (cancelled || observationController.signal.aborted) return;
@@ -779,14 +782,14 @@ export default function CreatePage() {
                     onTaskUpdate: bindTask,
                     ...retryContext,
                 }));
-                if (!result.video?.dataUrl) throw new Error("后端任务没有返回视频");
+                if (!result.video?.dataUrl && !result.video?.storageKey) throw new Error("后端任务没有返回视频");
                 const taskId = Array.from(boundTaskIds)[0];
                 if (!taskId) throw new Error("生成任务缺少稳定任务标识");
                 const task = completedCreationGenerationTask(runtime, { taskId, task: boundTasks.get(taskId), mode: "video", prompt: expandedPrompt, result, conversationId: activeConversation.id, messageId: assistantMessage.id });
                 const materialized = await runtime.consumeGenerationTaskMessage(task, assistantMessage.id, async ({ resultUrls, resultStorageKeys, effectKey }) => {
                     await updateOriginAssistant((item) => runtime.applyGenerationConsumerEffect(item, effectKey, (current) => ({ ...current, status: "done" as const, content: "视频已生成", resultUrls, ...(resultStorageKeys.length ? { resultStorageKeys } : {}) })).value);
                 }, { signal: requestLifecycle.signal });
-                if (!runtime.generationTaskMaterializedUrls(materialized)[0]) throw new Error("视频结果资源不可用");
+                if (!runtime.generationTaskMaterializedUrls(materialized).length && !runtime.generationTaskMaterializedStorageKeys(materialized).length) throw new Error("视频结果资源不可用");
             }
             updateOriginAssistant((item) => ({ ...item, status: "done" }));
         } catch (error) {
