@@ -406,12 +406,16 @@ export type WaitForGenerationTaskOptions = {
     useTextEvents?: boolean;
 };
 
+// 状态查询持续失败的最长容忍时间；超过后才让页面提示“连接中断”。
+const TASK_QUERY_OUTAGE_LIMIT_MS = 3 * 60 * 1000;
+
 export async function waitForGenerationTask(id: string, options?: WaitForGenerationTaskOptions) {
     if (options?.onTextDelta || options?.useTextEvents) return waitForGenerationTaskTextEvents(id, options);
     const startedAt = Date.now();
     const intervalMs = options?.intervalMs || 2000;
     let lastTask = options?.initialTask;
     let lastQueryError: unknown;
+    let firstFailureAt = 0;
     let consecutiveFailures = 0;
     try {
         while (Date.now() - startedAt < (options?.timeoutMs || taskWaitTimeoutMs(lastTask))) {
@@ -422,16 +426,21 @@ export async function waitForGenerationTask(id: string, options?: WaitForGenerat
                 lastTask = task;
                 lastQueryError = undefined;
                 consecutiveFailures = 0;
+                firstFailureAt = 0;
                 options?.onTaskUpdate?.(task);
             } catch (error) {
+                if (options?.signal?.aborted) throw error;
                 lastQueryError = error;
                 consecutiveFailures += 1;
-                // 连续失败说明查询通道已不可用，继续轮询只会空转到整体超时；
-                // 保留少量容忍度（约 10 秒）以跳过瞬时抖动后直接报错，便于用户尽早处理。
-                if (consecutiveFailures >= 5) {
-                    throw error instanceof Error ? error : new Error(String(error));
+                firstFailureAt ||= Date.now();
+                // 查询失败只代表“本页看不到状态”，后端任务仍在运行并会照常扣费、落库。
+                // 视频任务可持续数分钟，短暂断网或网关抖动不能让页面提前判失败；
+                // 持续不可达超过上限才放弃，且提示任务可能已在后台完成，避免用户重复提交。
+                if (Date.now() - firstFailureAt >= TASK_QUERY_OUTAGE_LIMIT_MS) {
+                    throw new Error("与服务器的连接中断，任务可能仍在后台生成，请稍后到资产页查看结果，请勿重复提交。");
                 }
-                await delay(intervalMs, options?.signal);
+                // 退避重试，避免离线期间高频请求。
+                await delay(Math.min(intervalMs * 2 ** Math.min(consecutiveFailures - 1, 3), 15_000), options?.signal);
                 continue;
             }
             if (task.status === "succeeded") {
