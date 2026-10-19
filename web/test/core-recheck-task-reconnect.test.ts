@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
 import { apiClient } from "../src/services/api/request";
 import { createGenerationTaskSubscriptionService, waitForGenerationTask, type GenerationTask } from "../src/services/api/task-center";
 
@@ -77,14 +77,13 @@ test("text reconnect queries the same task with the last event sequence and dedu
     expect(queries).toEqual(["/tasks/existing-task"]);
 });
 
-test("polling stops after five network failures but can resume the original task without creation", async () => {
-    let offline = true;
+test("polling survives more than five transient network failures and resumes the original task", async () => {
     let queries = 0;
     apiClient.defaults.adapter = async (config) => {
         expect(config.method).toBe("get");
         expect(config.url).toBe("/tasks/existing-task");
         queries += 1;
-        if (offline) throw new Error("offline fixture");
+        if (queries <= 6) throw new Error("offline fixture");
         return {
             config,
             status: 200,
@@ -93,25 +92,50 @@ test("polling stops after five network failures but can resume the original task
             data: { code: 0, data: terminal, msg: "ok" },
         };
     };
-    await expect(
-        waitForGenerationTask(running.id, {
-            initialTask: running,
-            intervalMs: 1,
-            timeoutMs: 1000,
-        }),
-    ).rejects.toThrow("offline fixture");
-    expect(queries).toBe(5);
-    offline = false;
-    expect(
-        (
-            await waitForGenerationTask(running.id, {
+    const result = await waitForGenerationTask(running.id, {
+        initialTask: running,
+        intervalMs: 1,
+        timeoutMs: 1000,
+    });
+    expect(result.status).toBe("succeeded");
+    expect(queries).toBe(7);
+});
+
+test("polling stops after a sustained outage but can resume the original task without creation", async () => {
+    let offline = true;
+    let queries = 0;
+    let now = 1_000_000;
+    const clock = spyOn(Date, "now").mockImplementation(() => now);
+    apiClient.defaults.adapter = async (config) => {
+        expect(config.method).toBe("get");
+        expect(config.url).toBe("/tasks/existing-task");
+        queries += 1;
+        if (offline) {
+            now += 60_000;
+            throw new Error("offline fixture");
+        }
+        return {
+            config,
+            status: 200,
+            statusText: "",
+            headers: {},
+            data: { code: 0, data: terminal, msg: "ok" },
+        };
+    };
+    try {
+        await expect(
+            waitForGenerationTask(running.id, {
                 initialTask: running,
                 intervalMs: 1,
-                timeoutMs: 1000,
-            })
-        ).status,
-    ).toBe("succeeded");
-    expect(queries).toBe(6);
+            }),
+        ).rejects.toThrow("任务可能仍在后台生成");
+        expect(queries).toBe(4);
+        offline = false;
+        expect((await waitForGenerationTask(running.id, { initialTask: running, intervalMs: 1 })).status).toBe("succeeded");
+        expect(queries).toBe(5);
+    } finally {
+        clock.mockRestore();
+    }
 });
 
 test("a failed observer restarts for an existing subscriber when network returns", async () => {

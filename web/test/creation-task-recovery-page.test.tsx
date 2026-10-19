@@ -21,9 +21,14 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
     const dom = new Window({ url: "http://localhost/create" });
     const originals = new Map<string, PropertyDescriptor | undefined>();
     for (const [key, value] of Object.entries({
-        window: dom, document: dom.document, navigator: dom.navigator,
-        HTMLElement: dom.HTMLElement, Element: dom.Element, Node: dom.Node,
-        SVGElement: dom.SVGElement, getComputedStyle: dom.getComputedStyle.bind(dom),
+        window: dom,
+        document: dom.document,
+        navigator: dom.navigator,
+        HTMLElement: dom.HTMLElement,
+        Element: dom.Element,
+        Node: dom.Node,
+        SVGElement: dom.SVGElement,
+        getComputedStyle: dom.getComputedStyle.bind(dom),
         IS_REACT_ACT_ENVIRONMENT: true,
     })) {
         originals.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
@@ -36,21 +41,43 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
     const storage = new Map<string, string>();
     const memoryStorage = {
         getItem: async (key: string) => storage.get(key) ?? null,
-        setItem: async (key: string, value: string) => { storage.set(key, value); },
-        removeItem: async (key: string) => { storage.delete(key); },
+        setItem: async (key: string, value: string) => {
+            storage.set(key, value);
+        },
+        removeItem: async (key: string) => {
+            storage.delete(key);
+        },
     };
     mock.module("@/lib/localforage-storage", () => ({ localForageStorageForScope: () => memoryStorage, localForageStorage: memoryStorage }));
-    const useAssetStore = create(() => ({ assets: [], addAsset: () => { throw new Error("unexpected asset creation"); } }));
+    const useAssetStore = create(() => ({
+        assets: [],
+        addAsset: () => {
+            throw new Error("unexpected asset creation");
+        },
+    }));
     mock.module("@/stores/use-asset-store", () => ({ useAssetStore }));
     mock.module("@/services/user-data-sync", () => ({
-        loadAssetsForUse: async () => {}, saveRemoteUserDataNow: async () => {}, hasRemoteUserDataSyncSession: () => false,
+        loadAssetsForUse: async () => {},
+        saveRemoteUserDataNow: async () => {},
+        hasRemoteUserDataSyncSession: () => false,
     }));
-    mock.module("@/services/creation-canvas-conversation", () => ({ continueCreationConversationOnCanvas: async () => { throw new Error("unexpected canvas handoff"); } }));
+    mock.module("@/services/creation-canvas-conversation", () => ({
+        continueCreationConversationOnCanvas: async () => {
+            throw new Error("unexpected canvas handoff");
+        },
+    }));
     let composer: { setPrompt: (value: string) => void; onSubmit: () => void };
     // Presentation is outside this effect regression; messages expose the real page state.
     mock.module("@/pages/create/creation-workspace", () => ({
-        CreationComposer: (props: typeof composer) => { composer = props; return null; }, CreationEmptySuggest: () => null, CreationHistoryDrawer: () => null,
-        CreationModeTabs: () => null, CreationWorkspaceToolbar: () => null, creationAssetCategoryLabels: {},
+        CreationComposer: (props: typeof composer) => {
+            composer = props;
+            return null;
+        },
+        CreationEmptySuggest: () => null,
+        CreationHistoryDrawer: () => null,
+        CreationModeTabs: () => null,
+        CreationWorkspaceToolbar: () => null,
+        creationAssetCategoryLabels: {},
         CreationMessageView: ({ item }: { item: CreationMessage }) => <pre data-message-id={item.id}>{JSON.stringify(item)}</pre>,
     }));
     mock.module("@/pages/create/creation-recent-canvases", () => ({ CreationRecentCanvases: () => null }));
@@ -65,7 +92,8 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
     let backendVideoUrl = "";
     const materialize = async (task: GenerationTask) => ({ ...task, outputs: task.outputs?.map((output) => ({ ...output, materializedAssetId: `asset-${task.id}` })) });
     mock.module("@/pages/create/creation-runtime", () => ({
-        ...lifecycle, ...dedupe,
+        ...lifecycle,
+        ...dedupe,
         generationTaskMaterializedUrls: assetSync.generationTaskMaterializedUrls,
         generationTaskMaterializedStorageKeys: assetSync.generationTaskMaterializedStorageKeys,
         materializeGenerationTaskAssets: materialize,
@@ -91,7 +119,9 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
         subscribeGenerationTasks: (ids: string[], receive: (task: GenerationTask) => void) => {
             const observer = { ids, receive };
             observers.add(observer);
-            return () => { observers.delete(observer); };
+            return () => {
+                observers.delete(observer);
+            };
         },
     }));
     const { App } = await import("antd");
@@ -115,17 +145,24 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
     const completedAt = "2026-10-18T14:12:00.000Z";
     function conversation(mode: "image" | "video", status: "pending" | "error", taskIds: string[]): CreationConversation {
         return {
-            id: "conversation-1", title: "恢复测试", updatedAt: createdAt,
+            id: "conversation-1",
+            title: "恢复测试",
+            updatedAt: createdAt,
             messages: [
                 { id: "prompt-1", role: "user", mode, content: "茶山的电影镜头", createdAt },
-                { id: "message-1", role: "assistant", mode, content: status === "error" ? "生成失败" : "", status, taskIds, createdAt,
-                    ...(status === "error" ? { error: "网络异常。", generationErrorCode: "network_error" } : {}) },
+                { id: "message-1", role: "assistant", mode, content: status === "error" ? "生成失败" : "", status, taskIds, createdAt, ...(status === "error" ? { error: "网络异常。", generationErrorCode: "network_error" } : {}) },
             ],
         };
     }
     function succeeded(id: string, type: "canvas_image" | "canvas_video", storageKey: string): GenerationTask {
         return {
-            id, type, status: "succeeded", prompt: "茶山的电影镜头", attempts: 1, createdAt, updatedAt: completedAt,
+            id,
+            type,
+            status: "succeeded",
+            prompt: "茶山的电影镜头",
+            attempts: 1,
+            createdAt,
+            updatedAt: completedAt,
             outputs: [{ outputIndex: 0, mediaType: type === "canvas_video" ? "video" : "image", materializedAssetId: `asset-${id}`, providerArtifactRef: storageKey }],
         };
     }
@@ -136,7 +173,15 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
         document.body.append(host);
         const errors: unknown[] = [];
         const root = createRoot(host, { onUncaughtError: (error) => errors.push(error) });
-        await act(async () => { root.render(<App><MemoryRouter><CreatePage /></MemoryRouter></App>); });
+        await act(async () => {
+            root.render(
+                <App>
+                    <MemoryRouter>
+                        <CreatePage />
+                    </MemoryRouter>
+                </App>,
+            );
+        });
         expect(errors).toEqual([]);
         expect(observers.size).toBe(initial.messages.some((item) => item.taskIds?.length) ? 1 : 0);
         return {
@@ -144,10 +189,15 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
             latestMessage: () => JSON.parse([...host.querySelectorAll("[data-message-id]")].at(-1)!.textContent!) as CreationMessage,
             persisted: () => (JSON.parse(storage.get(CREATION_CONVERSATIONS_KEY)!) as CreationConversation[])[0],
             push: async (task: GenerationTask) => {
-                await act(async () => { for (const observer of observers) if (observer.ids.includes(task.id)) observer.receive(task); });
+                await act(async () => {
+                    for (const observer of observers) if (observer.ids.includes(task.id)) observer.receive(task);
+                });
                 expect(errors).toEqual([]);
             },
-            dispose: async () => { await act(async () => root.unmount()); host.remove(); },
+            dispose: async () => {
+                await act(async () => root.unmount());
+                host.remove();
+            },
         };
     }
 
@@ -160,7 +210,9 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
             expect(page.message().generationErrorCode).toBeUndefined();
             expect(page.persisted().messages[1]).toMatchObject({ status: "done", content: "视频已生成", resultStorageKeys: ["resource:video-1"] });
             expect(page.persisted().messages[1].error).toBeUndefined();
-        } finally { await page.dispose(); }
+        } finally {
+            await page.dispose();
+        }
     });
 
     test("真实恢复 effect 等待分开发送的图片批次，并保存全部有序结果", async () => {
@@ -171,7 +223,9 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
             await page.push(succeeded("task-1", "canvas_image", "resource:image-1"));
             expect(page.message()).toMatchObject({ status: "done", content: "图片已生成", resultStorageKeys: ["resource:image-1", "resource:image-2"], taskIds: ["task-1", "task-2"] });
             expect(page.persisted().messages[1].resultStorageKeys).toEqual(["resource:image-1", "resource:image-2"]);
-        } finally { await page.dispose(); }
+        } finally {
+            await page.dispose();
+        }
     });
 
     test("附件已幂等挂载而未执行回调时，真实恢复 effect 仍收敛为成功", async () => {
@@ -181,7 +235,9 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
             expect(page.message()).toMatchObject({ status: "done", content: "视频已生成", resultStorageKeys: ["resource:video-1"] });
             expect(page.message().error).toBeUndefined();
             expect(page.message().generationErrorCode).toBeUndefined();
-        } finally { await page.dispose(); }
+        } finally {
+            await page.dispose();
+        }
     });
 
     test.each(["", "https://preview.invalid/video.mp4"])("主动提交视频的稳定资源足以完成消息（原始预览=%s）", async (preview) => {
@@ -197,6 +253,8 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
             expect(page.latestMessage()).toMatchObject({ status: "done", content: "视频已生成", resultStorageKeys: ["resource:submitted-video"], taskIds: ["submitted-task"] });
             expect(page.latestMessage().error).toBeUndefined();
             expect(page.persisted().messages.at(-1)?.status).toBe("done");
-        } finally { await page.dispose(); }
+        } finally {
+            await page.dispose();
+        }
     });
 }

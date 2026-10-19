@@ -9,15 +9,17 @@ const createdAt = "2026-10-18T14:06:00.000Z";
 const completedAt = "2026-10-18T14:12:00.000Z";
 
 function conversation(message: Partial<CreationMessage> = {}): CreationConversation[] {
-    return [{
-        id: "conversation-1",
-        title: "茶山视频",
-        updatedAt: createdAt,
-        messages: [
-            { id: "prompt-1", role: "user", mode: "video", content: "茶山的电影镜头", createdAt },
-            { id: "message-1", role: "assistant", mode: "video", content: "生成失败", createdAt, status: "error", error: "网络异常。", generationErrorCode: "network_error", taskIds: ["task-1"], ...message },
-        ],
-    }];
+    return [
+        {
+            id: "conversation-1",
+            title: "茶山视频",
+            updatedAt: createdAt,
+            messages: [
+                { id: "prompt-1", role: "user", mode: "video", content: "茶山的电影镜头", createdAt },
+                { id: "message-1", role: "assistant", mode: "video", content: "生成失败", createdAt, status: "error", error: "网络异常。", generationErrorCode: "network_error", taskIds: ["task-1"], ...message },
+            ],
+        },
+    ];
 }
 
 function task(overrides: Partial<GenerationTask> = {}): GenerationTask & { creationResultStorageKeys?: string[] } {
