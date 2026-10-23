@@ -11,7 +11,7 @@ describe("canvas audio waveform extraction", () => {
 
         for (let i = 0; i < length; i++) {
             // 前半段有声音（振幅从 0 逐渐增大到 1），后半段衰减
-            const envelope = i < length / 2 ? (i / (length / 2)) : 1 - (i - length / 2) / (length / 2);
+            const envelope = i < length / 2 ? i / (length / 2) : 1 - (i - length / 2) / (length / 2);
             const wave = Math.sin((i * 440 * 2 * Math.PI) / sampleRate);
             channel0[i] = wave * envelope;
             channel1[i] = wave * envelope * 0.8;

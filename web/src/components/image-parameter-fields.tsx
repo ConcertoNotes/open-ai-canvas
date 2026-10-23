@@ -173,21 +173,13 @@ export function ImageParameterFields({
                                         onClick={() => onChange("count", String(val))}
                                         className={cn(
                                             "flex h-8 items-center justify-center rounded-full text-xs font-medium transition-all select-none",
-                                            countVal === val
-                                                ? "bg-primary/20 text-primary border border-primary/40 font-semibold"
-                                                : "bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground border border-border/40",
+                                            countVal === val ? "bg-primary/20 text-primary border border-primary/40 font-semibold" : "bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground border border-border/40",
                                         )}
                                     >
                                         {val}
                                     </button>
                                 ))}
-                                {max >= 4 ? (
-                                    <ImageCountStepper
-                                        value={countVal}
-                                        max={max}
-                                        onChange={(next) => onChange("count", String(next))}
-                                    />
-                                ) : null}
+                                {max >= 4 ? <ImageCountStepper value={countVal} max={max} onChange={(next) => onChange("count", String(next))} /> : null}
                             </div>
                             {field.description ? <p className="text-xs leading-relaxed text-foreground/55">{field.description}</p> : null}
                         </div>
@@ -486,15 +478,7 @@ export function ImagePixelMappingEditor({ profile, disabled, onChange }: { profi
     );
 }
 
-function ImageCountStepper({
-    value,
-    max,
-    onChange,
-}: {
-    value: number;
-    max: number;
-    onChange: (value: number) => void;
-}) {
+function ImageCountStepper({ value, max, onChange }: { value: number; max: number; onChange: (value: number) => void }) {
     const isSelected = value >= 4;
     const [draftValue, setDraftValue] = useState(() => (value >= 4 ? String(value) : "4"));
 
@@ -511,7 +495,7 @@ function ImageCountStepper({
 
     const handleStepUp = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const base = value >= 4 ? value : (parseInt(draftValue, 10) || 4);
+        const base = value >= 4 ? value : parseInt(draftValue, 10) || 4;
         const next = Math.min(max, base + 1);
         setDraftValue(String(next));
         onChange(next);
@@ -519,7 +503,7 @@ function ImageCountStepper({
 
     const handleStepDown = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const base = value >= 4 ? value : (parseInt(draftValue, 10) || 4);
+        const base = value >= 4 ? value : parseInt(draftValue, 10) || 4;
         const next = Math.max(1, base - 1);
         setDraftValue(String(next));
         onChange(next);
@@ -540,13 +524,13 @@ function ImageCountStepper({
             e.currentTarget.blur();
         } else if (e.key === "ArrowUp") {
             e.preventDefault();
-            const base = value >= 4 ? value : (parseInt(draftValue, 10) || 4);
+            const base = value >= 4 ? value : parseInt(draftValue, 10) || 4;
             const next = Math.min(max, base + 1);
             setDraftValue(String(next));
             onChange(next);
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
-            const base = value >= 4 ? value : (parseInt(draftValue, 10) || 4);
+            const base = value >= 4 ? value : parseInt(draftValue, 10) || 4;
             const next = Math.max(1, base - 1);
             setDraftValue(String(next));
             onChange(next);
@@ -557,9 +541,7 @@ function ImageCountStepper({
         <div
             className={cn(
                 "group relative flex h-8 items-center overflow-hidden rounded-full border text-xs transition-colors cursor-pointer select-none",
-                isSelected
-                    ? "bg-primary/20 text-primary border-primary/40 font-semibold"
-                    : "bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground border-border/40",
+                isSelected ? "bg-primary/20 text-primary border-primary/40 font-semibold" : "bg-muted/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground border-border/40",
             )}
             onClick={handleSelectThis}
         >
@@ -579,9 +561,7 @@ function ImageCountStepper({
                 }}
                 className="w-full min-w-0 flex-1 bg-transparent pl-2 pr-0.5 text-center font-medium text-xs outline-none text-foreground"
             />
-            <div
-                className="flex flex-col h-full w-4.5 shrink-0 border-l justify-center items-center divide-y border-border/60"
-            >
+            <div className="flex flex-col h-full w-4.5 shrink-0 border-l justify-center items-center divide-y border-border/60">
                 <button
                     type="button"
                     tabIndex={-1}

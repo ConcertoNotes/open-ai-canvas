@@ -26,7 +26,24 @@ for (const inModal of [true, false]) {
         const selected: string[] = [];
         let query = "";
         try {
-            await act(async () => root.render(<MentionMenu anchor={anchor} connectedReferences={[reference]} assetReferences={[]} filteredReferences={[reference]} query="" cursorOffset={0} preferredWidth={320} onQueryChange={(value) => { query = value; }} onClose={() => {}} onSelect={(item) => selected.push(item.id)} />));
+            await act(async () =>
+                root.render(
+                    <MentionMenu
+                        anchor={anchor}
+                        connectedReferences={[reference]}
+                        assetReferences={[]}
+                        filteredReferences={[reference]}
+                        query=""
+                        cursorOffset={0}
+                        preferredWidth={320}
+                        onQueryChange={(value) => {
+                            query = value;
+                        }}
+                        onClose={() => {}}
+                        onSelect={(item) => selected.push(item.id)}
+                    />,
+                ),
+            );
             const menu = document.querySelector<HTMLElement>("[data-canvas-resource-mention-menu]")!;
             expect(menu.parentElement).toBe(inModal ? container : document.body);
             expect(menu.classList.contains("pointer-events-auto")).toBe(true);

@@ -84,9 +84,7 @@ export async function loadAudioWaveform(source: CanvasAudioSource, barCount = AU
             arrayBuffer = await response.arrayBuffer();
         }
 
-        const AudioContextClass = typeof window !== "undefined"
-            ? (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)
-            : undefined;
+        const AudioContextClass = typeof window !== "undefined" ? window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext : undefined;
         if (!AudioContextClass) throw new Error("当前环境不支持 Web Audio API");
         const ctx = new AudioContextClass();
         let buffer: AudioBuffer;
