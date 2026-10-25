@@ -60,6 +60,7 @@ if (!process.env.CREATION_RECOVERY_PAGE_CHILD) {
         loadAssetsForUse: async () => {},
         saveRemoteUserDataNow: async () => {},
         hasRemoteUserDataSyncSession: () => false,
+        subscribeRemoteUserDataReady: () => () => {},
     }));
     mock.module("@/services/creation-canvas-conversation", () => ({
         continueCreationConversationOnCanvas: async () => {
